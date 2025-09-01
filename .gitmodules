@@ -1,0 +1,7 @@
+[submodule ".magic-context"]
+	path = .magic-context
+	url = git@github.com:igamenovoer/magic-context.git
+	branch = main
+[submodule "model_zoo/FlowMDM"]
+	path = model_zoo/FlowMDM
+	url = https://github.com/BarqueroGerman/FlowMDM.git
