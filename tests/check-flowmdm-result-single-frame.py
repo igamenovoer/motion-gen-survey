@@ -87,7 +87,7 @@ plot.add_axes(
 )
 
 # Visualization settings
-frame_index = 0
+frame_index = 10
 show_all_joints = False  # Set to True to label all joints
 
 joints = motion_data[0, :, :, frame_index]  # Extract 22x3 joint positions
