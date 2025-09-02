@@ -15,15 +15,47 @@ Controls:
     - Left/Right arrows: Step frame by frame
     - 'r': Reset to frame 0
     - 'q': Quit
+
+Animation Implementation Details:
+==============================
+
+The animation system uses efficient in-place geometry updates to achieve smooth real-time motion:
+
+1. **Data Structure**: Motion data is stored as (batch, 22, 3, seq_len) where:
+   - 22 joints represent the T2M human skeleton format
+   - 3 coordinates (x, y, z) per joint
+   - seq_len frames of motion sequence
+
+2. **Skeleton Rendering**: Uses PyVista PolyData with:
+   - Points: 22 joint positions (updated each frame)
+   - Lines: Kinematic chain connections (static topology)
+   - In-place updates via np.copyto() for maximum performance
+
+3. **Text Updates**: Direct VTK text actor manipulation:
+   - Creates vtk.vtkTextActor once during initialization
+   - Updates content via SetInput() without actor recreation
+   - Zero memory allocation during animation loop
+
+4. **Animation Loop**: Timer-driven frame updates:
+   - Timer callback triggers every ~33ms (30 FPS)
+   - Each frame: update joint positions → update labels → update status text → render
+   - Efficient geometry updates avoid costly mesh recreation
+
+5. **Memory Efficiency**:
+   - Skeleton geometry created once, points updated in-place
+   - Text actors reused with content updates only
+   - No dynamic allocation during animation playback
+
+This approach ensures smooth 30 FPS animation even for long motion sequences.
 """
 
-import numpy as np
-import pathlib
-import time
-from threading import Thread, Event
 import contextlib
+import pathlib
+
+import numpy as np
 import pyvista as pv
 import pyvistaqt as pvqt
+import vtk
 
 # Load FlowMDM result
 flowmdm_result_dir = pathlib.Path(r'model_zoo\FlowMDM\results\babel\FlowMDM\001300000_s10_simple_walk_instructions')
@@ -68,77 +100,221 @@ for _chain in t2m_kinematic_chain:
 
 
 class FlowMDMAnimator:
-    """Interactive animator for FlowMDM motion data with in-place geometry updates."""
-
+    """Interactive animator for FlowMDM motion data with in-place geometry updates.
+    
+    This class provides real-time 3D visualization of T2M format motion sequences
+    with efficient geometry updates and interactive controls. The animation system
+    uses in-place point updates to achieve smooth 30 FPS playback without memory
+    allocation during the animation loop.
+    
+    Parameters
+    ----------
+    motion_data : np.ndarray
+        Motion sequence data with shape (batch, 22, 3, seq_len) where:
+        - batch: batch dimension (typically 1)
+        - 22: number of T2M joints
+        - 3: spatial coordinates (x, y, z)
+        - seq_len: number of frames in the sequence
+    
+    Attributes
+    ----------
+    motion_data : np.ndarray
+        The input motion sequence data
+    current_frame : int
+        Current animation frame index
+    total_frames : int
+        Total number of frames in the sequence
+    is_playing : bool
+        Animation playback state
+    fps : float
+        Target frames per second (30.0 for Babel dataset)
+    plotter : pvqt.BackgroundPlotter
+        PyVista Qt plotter for 3D rendering
+    skel_poly : pv.PolyData
+        Skeleton polydata with updateable point positions
+    skel_actor : pv.Actor
+        Skeleton mesh actor in the scene
+    label_poly : pv.PolyData
+        Joint label anchor points
+    labels_actor : pv.Actor
+        Joint label text actor
+    vtk_text_actor : vtk.vtkTextActor
+        Status text actor for efficient text updates
+    key_joint_ids : list[int]
+        Indices of joints to display labels for
+    
+    Methods
+    -------
+    render_frame(frame_index)
+        Update geometry and render a specific frame
+    toggle_animation()
+        Toggle between play and pause states
+    step_frame(direction)
+        Step animation by one frame in given direction
+    reset_animation()
+        Reset animation to frame 0
+    quit_animation()
+        Stop animation and close window
+    show()
+        Start the interactive animation display
+    """
     def __init__(self, motion_data: np.ndarray) -> None:
+        """Initialize the FlowMDM animator with motion data.
+        
+        Sets up the 3D scene, skeleton geometry, text actors, and animation controls.
+        Creates all necessary visualization components and prepares for real-time
+        animation playback.
+        
+        Parameters
+        ----------
+        motion_data : np.ndarray
+            Motion sequence data with shape (batch, 22, 3, seq_len)
+            
+        Notes
+        -----
+        This method performs several initialization steps:
+        1. Creates PyVista Qt plotter window
+        2. Sets up 3D scene with ground plane and axes
+        3. Builds skeleton geometry from T2M kinematic chains
+        4. Creates joint labels for key anatomical points
+        5. Sets up efficient VTK text actor for status display
+        6. Registers keyboard controls and timer callbacks
+        """
         self.motion_data = motion_data
         self.current_frame = 0
         self.total_frames = motion_data.shape[-1]
         self.is_playing = False
         self.fps = 30.0
-        self.frame_delay = 1.0 / self.fps
 
-        self.stop_event = Event()
-        self.animation_thread: Thread | None = None
-
-        # Plotter
+        # Plotter (Qt background)
         self.plotter = pvqt.BackgroundPlotter(  # type: ignore[attr-defined]
             title="FlowMDM T2M Motion Animation - 22 Joints",
             window_size=(1024, 768)
         )
-        self.setup_scene()
-        self.setup_controls()
+        self._setup_scene()
+        self._setup_controls()
 
-        # Skeleton polydata
+        # Construct skeleton polydata once
         self.skel_poly = self._build_skeleton_polydata(0)
         self.skel_actor = self.plotter.add_mesh(  # type: ignore[attr-defined]
             self.skel_poly,
             color=[0.2, 0.4, 0.8],
             line_width=3.0,
             render_lines_as_tubes=True,
-            point_size=12,
+            point_size=10,
             render_points_as_spheres=True
         )
 
-        # Labels (anchor points updated in-place)
-        self.key_joint_ids = [0, 12, 15, 10, 11, 20, 21]
+        # Labels - Show all important keypoints with larger font
+        self.key_joint_ids = [0, 3, 6, 9, 12, 15, 1, 2, 4, 5, 7, 8, 10, 11, 16, 17, 18, 19, 20, 21]  # All major joints
         first = self.motion_data[0, :, :, 0]
         self.label_poly = pv.PolyData(first[self.key_joint_ids].copy())
         self.labels_actor = self.plotter.add_point_labels(  # type: ignore[attr-defined]
             self.label_poly,
             [t2m_joint_names[i] for i in self.key_joint_ids],
             show_points=False,
-            font_size=10,
+            font_size=15,  # Increased from 10 to 15 (1.5x larger)
             always_visible=True
         )
 
-        # Create a single status text actor (updated in-place each frame)
-        self.status_text = self.plotter.add_text(  # type: ignore[attr-defined]
-            "", position='lower_left', font_size=11, color=[0, 0, 0]
-        )
+        # Status text actor - Create VTK text actor directly for guaranteed efficient updates
+        self.vtk_text_actor = vtk.vtkTextActor()
+        self.vtk_text_actor.SetInput("Frame 0")
+        self.vtk_text_actor.GetPositionCoordinate().SetCoordinateSystemToNormalizedViewport()
+        self.vtk_text_actor.GetPositionCoordinate().SetValue(0.02, 0.02)  # lower_left position
+        
+        # Set text properties - 1.5x larger font
+        text_prop = self.vtk_text_actor.GetTextProperty()
+        text_prop.SetFontSize(16)  # Increased from 11 to 16 (1.5x larger)
+        text_prop.SetColor(0, 0, 0)
+        text_prop.SetJustificationToLeft()
+        text_prop.SetVerticalJustificationToBottom()
+        
+        # Add to plotter as VTK actor
+        self.plotter.add_actor(self.vtk_text_actor, name='status_text')  # type: ignore[attr-defined]
 
+        # Initial frame
         self.render_frame(0)
 
-    # Scene
-    def setup_scene(self) -> None:
-        plane = pv.Plane(center=[0, 0, 0], direction=[0, 1, 0],
-                          i_size=4, j_size=4, i_resolution=20, j_resolution=20)
-        self.plotter.add_mesh(plane, color=[0.6, 0.6, 0.6], opacity=0.3,  # type: ignore[attr-defined]
-                               show_edges=True, line_width=0.5)
+        # Register timer callback (approx every frame)
+        self.plotter.add_callback(self._on_timer, interval=int(1000 / self.fps))  # type: ignore[attr-defined]
+
+    # --- Setup helpers ---
+    def _setup_scene(self) -> None:
+        """Set up the 3D scene with ground plane, axes, and camera.
+        
+        Creates the basic 3D environment for motion visualization including:
+        - Semi-transparent ground plane for spatial reference
+        - 3D coordinate axes for orientation
+        - Light gray background for better contrast
+        - Optimal camera position for viewing human motion
+        
+        Notes
+        -----
+        The ground plane is positioned at y=0 (assuming y-up coordinate system)
+        with grid lines for scale reference. Camera is positioned at [3,2,3]
+        looking at origin with y-axis as up vector.
+        """
+        plane = pv.Plane(center=[0, 0, 0], direction=[0, 1, 0], i_size=4, j_size=4, i_resolution=20, j_resolution=20)
+        self.plotter.add_mesh(plane, color=[0.6, 0.6, 0.6], opacity=0.3, show_edges=True, line_width=0.5)  # type: ignore[attr-defined]
         self.plotter.add_axes()  # type: ignore[attr-defined]
         self.plotter.set_background([0.95, 0.95, 0.95])  # type: ignore[attr-defined]
         self.plotter.camera_position = ([3, 2, 3], [0, 1, 0], [0, 1, 0])  # type: ignore[attr-defined]
 
-    # Controls
-    def setup_controls(self) -> None:
-        self.plotter.add_key_event(' ', self.toggle_animation)  # type: ignore[attr-defined]
+    def _setup_controls(self) -> None:
+        """Register keyboard event handlers for animation control.
+        
+        Sets up interactive keyboard controls for the animation:
+        - Spacebar: Toggle play/pause
+        - Left/Right arrows: Step frame by frame
+        - 'r': Reset to frame 0
+        - 'q': Quit application
+        
+        Notes
+        -----
+        Both ' ' (space) and 'space' key events are registered for
+        play/pause functionality to ensure compatibility across
+        different PyVista versions and platforms.
+        """
+        for key in (' ', 'space'):
+            self.plotter.add_key_event(key, self.toggle_animation)  # type: ignore[attr-defined]
         self.plotter.add_key_event('Left', lambda: self.step_frame(-1))  # type: ignore[attr-defined]
         self.plotter.add_key_event('Right', lambda: self.step_frame(1))  # type: ignore[attr-defined]
         self.plotter.add_key_event('r', self.reset_animation)  # type: ignore[attr-defined]
         self.plotter.add_key_event('q', self.quit_animation)  # type: ignore[attr-defined]
 
-    # Geometry
+    # --- Geometry helpers ---
     def _build_skeleton_polydata(self, frame_index: int) -> pv.PolyData:
+        """Build PyVista PolyData for the skeleton at a specific frame.
+        
+        Creates a PolyData object containing the 22 joint positions and
+        kinematic chain connections for the T2M skeleton format. The
+        resulting geometry can be efficiently updated by modifying point
+        positions without recreating the topology.
+        
+        Parameters
+        ----------
+        frame_index : int
+            Frame number to extract joint positions from (0-based index)
+            
+        Returns
+        -------
+        pv.PolyData
+            PolyData object with:
+            - points: 22 joint positions (shape: 22x3)
+            - lines: kinematic chain connections as line cells
+            
+        Notes
+        -----
+        The kinematic chain structure follows the T2M format:
+        - Right leg: Pelvis → R.Hip → R.Knee → R.Ankle → R.Foot
+        - Left leg: Pelvis → L.Hip → L.Knee → L.Ankle → L.Foot  
+        - Spine: Pelvis → Spine1 → Spine2 → Spine3 → Neck → Head
+        - Right arm: Spine3 → R.Collar → R.Shoulder → R.Elbow → R.Wrist
+        - Left arm: Spine3 → L.Collar → L.Shoulder → L.Elbow → L.Wrist
+        
+        Line cells are formatted as [2, start_idx, end_idx] for each bone.
+        """
         joints = self.motion_data[0, :, :, frame_index].copy()
         line_cells: list[int] = []
         for a, b in skeleton_pairs:
@@ -148,96 +324,145 @@ class FlowMDMAnimator:
         poly.lines = np.array(line_cells)
         return poly
 
-    # Frame update
+    # --- Frame / animation logic ---
     def render_frame(self, frame_index: int) -> None:
-        if frame_index < 0 or frame_index >= self.total_frames:
+        """Render a specific animation frame with efficient geometry updates.
+        
+        Updates the 3D visualization to display the skeleton pose at the
+        specified frame. Uses in-place geometry updates for maximum performance:
+        - Updates skeleton joint positions via np.copyto()
+        - Updates joint label positions
+        - Updates status text with current frame info
+        - Triggers scene re-rendering
+        
+        Parameters
+        ----------
+        frame_index : int
+            Target frame to render (0-based index). Must be within
+            [0, total_frames-1] range.
+            
+        Notes
+        -----
+        This method is optimized for real-time animation:
+        - No new memory allocation during updates
+        - Direct VTK text actor manipulation for status text
+        - In-place point array updates using np.copyto()
+        - Exception handling for label actor updates
+        
+        The status text displays: "F {frame}/{total-1} | {Play/Pause}"
+        """
+        if not (0 <= frame_index < self.total_frames):
             return
         self.current_frame = frame_index
         joints = self.motion_data[0, :, :, frame_index]
-        # In-place update of skeleton points (keeps VTK data objects stable)
-        skel_pts = self.skel_poly.points
-        skel_pts[:] = joints  # type: ignore[index]
-        self.skel_poly.points = skel_pts  # reassign is optional but explicit
-        # In-place update of label anchor points
-        label_pts = self.label_poly.points
-        label_pts[:] = joints[self.key_joint_ids]  # type: ignore[index]
-        self.label_poly.points = label_pts
-        # Force label actor to re-read updated dataset (some backends need this)
+        # Update skeleton points
+        pts = self.skel_poly.points
+        np.copyto(pts, joints)
+        self.skel_poly.points = pts
+        # Update label anchors
+        lpts = self.label_poly.points
+        np.copyto(lpts, joints[self.key_joint_ids])
+        self.label_poly.points = lpts
         with contextlib.suppress(Exception):
             self.labels_actor.SetInputData(self.label_poly)  # type: ignore[attr-defined]
-
-        # Compact status line (lower-left) updated in place; avoid adding new actors
-        status = f"F {frame_index}/{self.total_frames-1} | {'Play' if self.is_playing else 'Pause'} | Space Play/Pause, Arrows Step, R Reset, Q Quit"
-        updated = False
-        if hasattr(self.status_text, "SetInput"):
-            try:
-                self.status_text.SetInput(status)  # type: ignore[attr-defined]
-                updated = True
-            except Exception:
-                pass
-        if (not updated) and hasattr(self.status_text, "SetText"):
-            try:
-                self.status_text.SetText(status)  # type: ignore[attr-defined]
-                updated = True
-            except Exception:
-                pass
-        if not updated:
-            # Fallback: remove previous actor before recreating to prevent overlap
-            with contextlib.suppress(Exception):
-                self.plotter.remove_actor(self.status_text)  # type: ignore[attr-defined]
-            self.status_text = self.plotter.add_text(  # type: ignore[attr-defined]
-                status, position='lower_left', font_size=11, color=[0, 0, 0]
-            )
+        # Update status text - Direct VTK update (most efficient, no new actors)
+        status = f"F {frame_index}/{self.total_frames-1} | {'Play' if self.is_playing else 'Pause'}"
+        self.vtk_text_actor.SetInput(status)  # Direct VTK call - guaranteed efficient
         self.plotter.render()  # type: ignore[attr-defined]
 
-    # Playback
-    def toggle_animation(self) -> None:
+    def _on_timer(self) -> None:
+        """Timer callback for automatic animation playback.
+        
+        Called periodically (every ~33ms for 30 FPS) during animation playback.
+        Advances to the next frame when playing, with automatic looping when
+        reaching the end of the sequence.
+        
+        Notes
+        -----
+        Only advances frames when is_playing is True. Uses modulo arithmetic
+        for seamless looping: (current_frame + 1) % total_frames.
+        Timer interval is set during initialization: int(1000 / self.fps).
+        """
         if self.is_playing:
-            self.stop_animation()
-        else:
-            self.start_animation()
-
-    def start_animation(self) -> None:
-        if not self.is_playing:
-            self.is_playing = True
-            self.stop_event.clear()
-            self.animation_thread = Thread(target=self._animation_loop, daemon=True)
-            self.animation_thread.start()
-            print("Animation started")
-
-    def stop_animation(self) -> None:
-        if self.is_playing:
-            self.is_playing = False
-            self.stop_event.set()
-            if self.animation_thread is not None:
-                self.animation_thread.join()
-            print("Animation paused")
-
-    def _animation_loop(self) -> None:
-        while not self.stop_event.is_set():
             self.render_frame((self.current_frame + 1) % self.total_frames)
-            time.sleep(self.frame_delay)
+
+    # --- Control methods ---
+    def toggle_animation(self) -> None:
+        """Toggle between play and pause states.
+        
+        Switches the animation between playing and paused states.
+        Prints the current state to console for user feedback.
+        Bound to spacebar key events in the interactive window.
+        """
+        self.is_playing = not self.is_playing
+        print("Playing" if self.is_playing else "Paused")
 
     def step_frame(self, direction: int) -> None:
-        self.stop_animation()
+        """Step animation by one frame in the specified direction.
+        
+        Advances or retreats the animation by exactly one frame.
+        Automatically pauses playback and uses modulo arithmetic
+        for seamless looping in both directions.
+        
+        Parameters
+        ----------
+        direction : int
+            Direction to step: +1 for forward, -1 for backward
+            
+        Notes
+        -----
+        Bound to Left/Right arrow keys. Always pauses animation
+        to allow precise frame-by-frame inspection.
+        """
+        self.is_playing = False
         self.render_frame((self.current_frame + direction) % self.total_frames)
 
     def reset_animation(self) -> None:
-        self.stop_animation()
+        """Reset animation to the first frame.
+        
+        Pauses playback and jumps to frame 0. Useful for restarting
+        the animation sequence. Prints confirmation to console.
+        Bound to 'r' key event in the interactive window.
+        """
+        self.is_playing = False
         self.render_frame(0)
         print("Animation reset")
 
     def quit_animation(self) -> None:
-        self.stop_animation()
+        """Stop animation and close the visualization window.
+        
+        Pauses playback and closes the PyVista plotter window,
+        effectively terminating the application. Bound to 'q'
+        key event for quick exit.
+        """
+        self.is_playing = False
         self.plotter.close()  # type: ignore[attr-defined]
 
-    # UI
+    # --- UI ---
     def show(self) -> None:
+        """Start the interactive animation display.
+        
+        Prints control instructions to console and opens the PyVista
+        Qt window for interactive 3D visualization. This method blocks
+        until the window is closed.
+        
+        Notes
+        -----
+        The animation starts in paused state at frame 0. Use spacebar
+        to begin playback. The window remains responsive to all registered
+        keyboard controls during display.
+        
+        Control summary printed to console:
+        - Spacebar: Play/Pause animation
+        - Left/Right arrows: Step frame by frame  
+        - r: Reset to frame 0
+        - q: Quit application
+        """
         print("\nAnimation Controls:")
         print("  Spacebar: Play/Pause")
-        print("  Left/Right arrows: Step frame by frame")
-        print("  'r': Reset to frame 0")
-        print("  'q': Quit")
+        print("  Left/Right arrows: Step frame")
+        print("  r: Reset")
+        print("  q: Quit")
         print("\nStarting interactive animation...")
         self.plotter.show()  # type: ignore[attr-defined]
 

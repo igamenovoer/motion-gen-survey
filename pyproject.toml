@@ -33,8 +33,9 @@ dependencies = ["einops>=0.8.1,<0.9"]
 
 [project.optional-dependencies]
 dev = [
-    # Note: Dev dependencies are managed through tool.pixi.feature.dev sections below
+    # Note: Main workspace dev dependencies are managed through tool.pixi.feature.dev sections below
     # This section is kept minimal for standard Python packaging compatibility
+    # FlowMDM has separate dependencies in model_zoo/FlowMDM/pyproject.toml
 ]
 
 [project.urls]
@@ -54,22 +55,12 @@ platforms = ["win-64", "linux-64"]
 version = "0.1.0"
 
 [tool.pixi.tasks]
-# FlowMDM wrapper tasks - use Method 2 from howto-manage-pixi-submodule-environments.md
-# Setup and utility tasks
-flowmdm-setup = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml setup"
-flowmdm-shell = "pixi shell --manifest-path model_zoo/FlowMDM/pixi.toml"
-flowmdm-install = "pixi install --manifest-path model_zoo/FlowMDM/pixi.toml"
-flowmdm-add = "pixi add --manifest-path model_zoo/FlowMDM/pixi.toml"
-
-# Testing and verification tasks  
-flowmdm-test-cuda = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml test-cuda"
-flowmdm-pytorch-version = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml pytorch-version"
-
-# Motion generation tasks
-flowmdm-help = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml help"
-flowmdm-generate = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml generate"
-flowmdm-generate-motion = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml generate-motion"
-flowmdm-generate-safe = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml generate-safe"
+# FlowMDM tasks have been moved to model_zoo/FlowMDM/pyproject.toml using pixi-within-pyproject
+# Usage examples:
+#   cd model_zoo/FlowMDM && pixi run pytorch-version
+#   cd model_zoo/FlowMDM && pixi run test-cuda
+#   cd model_zoo/FlowMDM && pixi run setup
+#   cd model_zoo/FlowMDM && pixi run generate-motion
 
 [tool.pixi.pypi-options]
 # PyTorch CUDA 12.6 wheels require custom index
@@ -86,9 +77,8 @@ torch = "*"
 torchvision = "*"
 ipykernel = ">=6.30.1, <7"
 
-# Git-based dependencies (converted from pip install git+https://...)
-clip = { git = "https://github.com/openai/CLIP.git" }
-smplx = { git = "https://github.com/GuyTevet/smplx.git" }
+# Git-based dependencies
+# Note: clip and smplx moved to FlowMDM submodule (model_zoo/FlowMDM/pyproject.toml)
 pyvista = ">=0.46.3, <0.47"
 pyvistaqt = ">=0.11.3, <0.12"
 trimesh = ">=4.8.0, <5"
