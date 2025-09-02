@@ -21,3 +21,6 @@ Thumbs.db
 *.log
 *.out
 *.err
+
+# Temporary files
+tmp/

@@ -6,96 +6,21 @@ platforms = ["win-64", "linux-64"]
 version = "0.1.0"
 
 [tasks]
+# FlowMDM wrapper tasks - use Method 2 from howto-manage-pixi-submodule-environments.md
+# Setup and utility tasks
+flowmdm-setup = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml setup"
+flowmdm-shell = "pixi shell --manifest-path model_zoo/FlowMDM/pixi.toml"
+flowmdm-install = "pixi install --manifest-path model_zoo/FlowMDM/pixi.toml"
+flowmdm-add-pypi = "pixi add --pypi --manifest-path model_zoo/FlowMDM/pixi.toml"
+
+# Testing and verification tasks  
+flowmdm-test-cuda = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml test-cuda"
+flowmdm-pytorch-version = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml pytorch-version"
+
+# Motion generation tasks
+flowmdm-help = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml help"
+flowmdm-generate = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml generate"
+flowmdm-generate-motion = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml generate-motion"
+flowmdm-generate-safe = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml generate-safe"
 
 [dependencies]
-
-# FlowMDM Runtime Environment - Linux/Windows only (macOS excluded due to CUDA requirements)
-[environments]
-rt-flowmdm = { features = ["flowmdm"], solve-group = "flowmdm" }
-
-# Platform restrictions handled at environment level
-
-[feature.flowmdm.dependencies]
-python = ">=3.8.0,<3.10"
-# PyTorch with CUDA support installed via PyPI (not available in conda with CUDA)
-# pytorch = ">=1.13.0,<1.14"  # Moved to pypi-dependencies for CUDA support
-# torchvision = ">=0.14.0,<0.15"  # Moved to pypi-dependencies for CUDA support
-numpy = ">=1.23.0,<1.25"
-scipy = ">=1.9.0,<2.0"
-matplotlib = ">=3.1.0"
-pandas = ">=1.5.0,<2.0"
-h5py = ">=3.7.0"
-pillow = ">=9.0.0"
-pyyaml = ">=6.0"
-tqdm = ">=4.60.0"
-requests = ">=2.25.0"
-urllib3 = ">=1.26.0,<2.0"
-joblib = ">=1.0.0"
-networkx = ">=3.0"
-filelock = ">=3.6.0"
-packaging = ">=21.0"
-setuptools = ">=60.0.0"
-pip = ">=22.0.0"
-psutil = ">=5.8.0"
-termcolor = ">=2.0.0"
-
-# PyTorch ecosystem
-einops = ">=0.6.0"
-transformers = ">=4.20.0,<5.0"
-
-# 3D/Graphics dependencies  
-# trimesh managed by aitviewer in pypi-dependencies
-imageio = ">=2.25.0"
-pyglet = ">=2.0.0"
-# pyopengl managed by pyrender in pypi-dependencies
-
-# SpaCy and NLP
-spacy = ">=3.4.0,<4.0"
-
-# Visualization and plotting
-plotly = ">=5.0.0"
-loguru = ">=0.7.0"
-ffmpeg = ">=6.1.0,<8"
-
-[feature.flowmdm.pypi-dependencies]
-# PyTorch with CUDA 11.7 support installed via setup-flowmdm task
-# torch = "1.13.0+cu117"  # Installed via setup task with proper CUDA flags
-# torchvision = "0.14.0+cu117"  # Installed via setup task with proper CUDA flags
-
-# Essential packages not available in conda-forge
-pyrender = ">=0.1.40"
-aitviewer = ">=1.12.0"
-# chumpy = ">=0.70"  # Problematic build - install manually if needed
-freetype-py = ">=2.3.0"
-# nvidia-htop = ">=1.0.0"  # Optional package  
-blobfile = ">=2.0.0"
-# clearml = ">=1.8.0"  # Optional package
-more_itertools = ">=10.0.0"
-# These will be installed via pip in post-install
-# clip-by-openai (via git+https://github.com/openai/CLIP.git)
-# smplx (via git+https://github.com/GuyTevet/smplx.git)
-
-[feature.flowmdm.tasks]
-# Setup FlowMDM environment - install CUDA PyTorch and additional dependencies
-setup-flowmdm = { cmd = [
-    "pip", "uninstall", "-y", "torch", "torchvision", "||", "true",
-    "&&", "pip", "install", "torch==1.13.0+cu117", "torchvision==0.14.0+cu117", "--extra-index-url", "https://download.pytorch.org/whl/cu117", "--force-reinstall",
-    "&&", "python", "-m", "spacy", "download", "en_core_web_sm",
-    "&&", "pip", "install", "git+https://github.com/openai/CLIP.git",
-    "&&", "pip", "install", "git+https://github.com/GuyTevet/smplx.git"
-], description = "Install PyTorch with CUDA 11.7 support and additional FlowMDM dependencies" }
-
-# Test CUDA PyTorch installation
-test-cuda = { cmd = [
-    "python", "-c", "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}'); print(f'CUDA version: {torch.version.cuda if torch.cuda.is_available() else \"N/A\"}'); print(f'GPU count: {torch.cuda.device_count()}'); print(f'GPU device: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"N/A\"}')"
-], description = "Test PyTorch CUDA installation and GPU availability" }
-
-# Quick PyTorch version check
-pytorch-version = { cmd = [
-    "python", "-c", "import torch; print(torch.__version__)"
-], description = "Quick PyTorch version check" }
-
-# Run FlowMDM with proper environment
-run-flowmdm = { cmd = [
-    "python", "-m", "runners.generate_final", "--help"
-], cwd = "model_zoo/FlowMDM", description = "Run FlowMDM generation script" }
