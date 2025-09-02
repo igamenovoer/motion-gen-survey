@@ -1,2 +1,23 @@
 # pixi environments
 .pixi
+
+# Ignore all files in data/smplx/ except README.md
+data/smplx/*
+!data/smplx/README.md
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Generated outputs
+*.log
+*.out
+*.err

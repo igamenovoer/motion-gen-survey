@@ -4,4 +4,6 @@
 	branch = main
 [submodule "model_zoo/FlowMDM"]
 	path = model_zoo/FlowMDM
-	url = https://github.com/BarqueroGerman/FlowMDM.git
+	url = https://github.com/imsight-forks/FlowMDM.git
+	branch = main
+	ignore = dirty

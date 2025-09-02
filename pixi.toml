@@ -55,6 +55,7 @@ spacy = ">=3.4.0,<4.0"
 # Visualization and plotting
 plotly = ">=5.0.0"
 loguru = ">=0.7.0"
+ffmpeg = ">=6.1.0,<8"
 
 [feature.flowmdm.pypi-dependencies]
 # PyTorch with CUDA 11.7 support installed via setup-flowmdm task

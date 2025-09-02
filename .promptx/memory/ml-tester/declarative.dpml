@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<memory>
+  <item id="mem_1756784778620_jhqguet3j" time="2025/09/02 11:46">
+    <content>
+      FlowMDM Model Analysis and Setup (Motion Generation Survey Project)
+    
+      WHAT IS FLOWMDM:
+      - Diffusion-based text-to-motion generation model from CVPR&#x27;24
+      - Generates seamless human motion compositions using Blended Positional Encodings (BPE)
+      - Creates long, continuous sequences with smooth transitions between actions
+      - Key innovation: switches between Absolute and Relative Positional Encodings during diffusion
+      - Paper: &quot;Seamless Human Motion Composition with Blended Positional Encodings&quot;
+    
+      LOCATION AND STRUCTURE:
+      - Path: D:\code\motion-gen-survey\model_zoo\FlowMDM\
+      - Already forked to: https://github.com/imsight-forks/FlowMDM
+      - Pretrained models downloaded (155MB):
+      - Babel model: ./results/babel/FlowMDM/model001300000.pt
+      - HumanML3D model: ./results/humanml/FlowMDM/model000500000.pt
+      - Dependencies available: SMPL files, GloVe embeddings, T2M evaluators
+    
+      PIXI ENVIRONMENT SETUP:
+      - Environment name: rt-flowmdm
+      - Python: &gt;=3.8.0,&lt;3.10
+      - PyTorch: 1.13.0+cu117 (CUDA support)
+      - Setup task: `pixi run -e rt-flowmdm setup-flowmdm`
+      - Test CUDA: `pixi run -e rt-flowmdm test-cuda`
+      - Run generation: `pixi run -e rt-flowmdm python -m runners.generate`
+    
+      RUNNING FLOWMDM:
+      Basic generation command:
+      ```bash
+      pixi run -e rt-flowmdm python -m runners.generate \
+      --model_path ./results/humanml/FlowMDM/model000500000.pt \
+      --instructions_file ./runners/jsons/composition_humanml.json \
+      --bpe_denoising_step 60 \
+      --guidance_param 2.5 \
+      --use_chunked_att
+      ```
+    
+      KEY PARAMETERS:
+      - bpe_denoising_step: Controls quality vs smoothness (HumanML3D=60, Babel=125)
+      - guidance_param: Text conditioning strength (HumanML3D=2.5, Babel=1.5)
+      - use_chunked_att: Memory optimization for long sequences
+    
+      JSON INPUT FORMAT:
+      Uses structured JSON files with &quot;lengths&quot; (frame counts) and &quot;text&quot; (motion descriptions):
+      ```json
+      {
+      &quot;lengths&quot;: [99, 169, 199],
+      &quot;text&quot;: [&quot;walk backwards&quot;, &quot;pat something&quot;, &quot;wave arms&quot;]
+      }
+      ```
+    
+      DATASETS:
+      - HumanML3D: 14,616 sequences, detailed descriptions (12 words avg)
+      - Babel: 43 hours mocap, simple actions (2.3 words avg)
+    
+      EVALUATION STATUS:
+      - Ready for testing with pretrained models
+      - All dependencies downloaded via PowerShell scripts
+      - Can generate motion compositions immediately
+    </content>
+    <tags>#其他</tags>
+  </item>
+</memory>

@@ -1,0 +1,66 @@
+{
+  "version": "2.0.0",
+  "source": "project",
+  "metadata": {
+    "version": "2.0.0",
+    "description": "project 级资源注册表",
+    "createdAt": "2025-09-02T03:36:52.575Z",
+    "updatedAt": "2025-09-02T03:36:52.577Z",
+    "resourceCount": 3
+  },
+  "resources": [
+    {
+      "id": "ml-model-evaluation",
+      "source": "project",
+      "protocol": "execution",
+      "name": "Ml Model Evaluation 执行模式",
+      "description": "执行模式，定义具体的行为模式",
+      "reference": "@project://.promptx/resource/role/ml-tester/execution/ml-model-evaluation.execution.md",
+      "metadata": {
+        "createdAt": "2025-09-02T03:36:52.576Z",
+        "updatedAt": "2025-09-02T03:36:52.576Z",
+        "scannedAt": "2025-09-02T03:36:52.576Z",
+        "path": "role/ml-tester/execution/ml-model-evaluation.execution.md"
+      }
+    },
+    {
+      "id": "ml-tester",
+      "source": "project",
+      "protocol": "role",
+      "name": "Ml Tester 角色",
+      "description": "专业角色，提供特定领域的专业能力",
+      "reference": "@project://.promptx/resource/role/ml-tester/ml-tester.role.md",
+      "metadata": {
+        "createdAt": "2025-09-02T03:36:52.576Z",
+        "updatedAt": "2025-09-02T03:36:52.576Z",
+        "scannedAt": "2025-09-02T03:36:52.576Z",
+        "path": "role/ml-tester/ml-tester.role.md"
+      }
+    },
+    {
+      "id": "ml-research-mindset",
+      "source": "project",
+      "protocol": "thought",
+      "name": "Ml Research Mindset 思维模式",
+      "description": "思维模式，指导AI的思考方式",
+      "reference": "@project://.promptx/resource/role/ml-tester/thought/ml-research-mindset.thought.md",
+      "metadata": {
+        "createdAt": "2025-09-02T03:36:52.577Z",
+        "updatedAt": "2025-09-02T03:36:52.577Z",
+        "scannedAt": "2025-09-02T03:36:52.577Z",
+        "path": "role/ml-tester/thought/ml-research-mindset.thought.md"
+      }
+    }
+  ],
+  "stats": {
+    "totalResources": 3,
+    "byProtocol": {
+      "execution": 1,
+      "role": 1,
+      "thought": 1
+    },
+    "bySource": {
+      "project": 3
+    }
+  }
+}

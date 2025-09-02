@@ -1,0 +1,50 @@
+{
+  "currentState": "memory_saved",
+  "stateHistory": [
+    {
+      "from": "initial",
+      "command": "init",
+      "timestamp": "2025-09-02T03:36:52.566Z",
+      "args": [
+        {
+          "workingDirectory": "D:\\code\\motion-gen-survey",
+          "ideType": "claude"
+        }
+      ]
+    },
+    {
+      "from": "initialized",
+      "command": "welcome",
+      "timestamp": "2025-09-02T03:36:56.504Z",
+      "args": []
+    },
+    {
+      "from": "service_discovery",
+      "command": "action",
+      "timestamp": "2025-09-02T03:37:12.786Z",
+      "args": [
+        "ml-tester"
+      ]
+    },
+    {
+      "from": "role_activated_with_memory",
+      "command": "recall",
+      "timestamp": "2025-09-02T03:45:22.439Z",
+      "args": [
+        "ml-tester"
+      ]
+    },
+    {
+      "from": "recalled-ml-tester",
+      "command": "remember",
+      "timestamp": "2025-09-02T03:46:18.612Z",
+      "args": [
+        "ml-tester",
+        "FlowMDM Model Analysis and Setup (Motion Generation Survey Project)\n\nWHAT IS FLOWMDM:\n- Diffusion-based text-to-motion generation model from CVPR'24\n- Generates seamless human motion compositions using Blended Positional Encodings (BPE) \n- Creates long, continuous sequences with smooth transitions between actions\n- Key innovation: switches between Absolute and Relative Positional Encodings during diffusion\n- Paper: \"Seamless Human Motion Composition with Blended Positional Encodings\"\n\nLOCATION AND STRUCTURE:\n- Path: D:\\code\\motion-gen-survey\\model_zoo\\FlowMDM\\\n- Already forked to: https://github.com/imsight-forks/FlowMDM\n- Pretrained models downloaded (155MB):\n  - Babel model: ./results/babel/FlowMDM/model001300000.pt\n  - HumanML3D model: ./results/humanml/FlowMDM/model000500000.pt\n- Dependencies available: SMPL files, GloVe embeddings, T2M evaluators\n\nPIXI ENVIRONMENT SETUP:\n- Environment name: rt-flowmdm\n- Python: >=3.8.0,<3.10\n- PyTorch: 1.13.0+cu117 (CUDA support)\n- Setup task: `pixi run -e rt-flowmdm setup-flowmdm`\n- Test CUDA: `pixi run -e rt-flowmdm test-cuda`\n- Run generation: `pixi run -e rt-flowmdm python -m runners.generate`\n\nRUNNING FLOWMDM:\nBasic generation command:\n```bash\npixi run -e rt-flowmdm python -m runners.generate \\\n  --model_path ./results/humanml/FlowMDM/model000500000.pt \\\n  --instructions_file ./runners/jsons/composition_humanml.json \\\n  --bpe_denoising_step 60 \\\n  --guidance_param 2.5 \\\n  --use_chunked_att\n```\n\nKEY PARAMETERS:\n- bpe_denoising_step: Controls quality vs smoothness (HumanML3D=60, Babel=125)\n- guidance_param: Text conditioning strength (HumanML3D=2.5, Babel=1.5)\n- use_chunked_att: Memory optimization for long sequences\n\nJSON INPUT FORMAT:\nUses structured JSON files with \"lengths\" (frame counts) and \"text\" (motion descriptions):\n```json\n{\n  \"lengths\": [99, 169, 199],\n  \"text\": [\"walk backwards\", \"pat something\", \"wave arms\"]\n}\n```\n\nDATASETS:\n- HumanML3D: 14,616 sequences, detailed descriptions (12 words avg)\n- Babel: 43 hours mocap, simple actions (2.3 words avg)\n\nEVALUATION STATUS:\n- Ready for testing with pretrained models\n- All dependencies downloaded via PowerShell scripts\n- Can generate motion compositions immediately",
+        "--tags",
+        "flowmdm diffusion text-to-motion pixi cuda setup generation evaluation"
+      ]
+    }
+  ],
+  "lastUpdated": "2025-09-02T03:46:18.623Z"
+}
