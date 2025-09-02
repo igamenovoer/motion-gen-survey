@@ -44,7 +44,44 @@
         "--tags",
         "flowmdm diffusion text-to-motion pixi cuda setup generation evaluation"
       ]
+    },
+    {
+      "from": "memory_saved",
+      "command": "init",
+      "timestamp": "2025-09-02T07:38:34.384Z",
+      "args": [
+        {
+          "workingDirectory": "D:\\code\\motion-gen-survey"
+        }
+      ]
+    },
+    {
+      "from": "initialized",
+      "command": "action",
+      "timestamp": "2025-09-02T07:38:41.867Z",
+      "args": [
+        "ml-tester"
+      ]
+    },
+    {
+      "from": "role_activated_with_memory",
+      "command": "learn",
+      "timestamp": "2025-09-02T07:41:24.238Z",
+      "args": [
+        "@file://igpy/myplot/vistaplot.py"
+      ]
+    },
+    {
+      "from": "learn_error",
+      "command": "remember",
+      "timestamp": "2025-09-02T07:42:04.648Z",
+      "args": [
+        "ml-tester",
+        "VistaPlot PyVista Visualization Library (motion-gen-survey)\n\nLIBRARY OVERVIEW:\n- Custom PyVista wrapper at igpy.myplot.vistaplot\n- Extended plotter with helper functions for 3D visualization\n- Supports both blocking and non-blocking (Qt background) plotting\n- Designed for scientific visualization including motion data\n\nKEY CLASSES:\n1. VistaObject: Wrapper holding PyVista mesh + trimesh info\n2. ExPlotter: Extended plotter with visualization helpers\n\nINITIALIZATION:\n```python\nimport igpy.myplot.vistaplot as vp\n\n# Non-blocking Qt background plotter (recommended)\nplot = vp.ExPlotter.init_with_background_plotter(\n    with_menu=False,          # Hide Qt menu\n    with_toolbar=False,       # Hide camera toolbar\n    title=\"Motion Viewer\",\n    background_color3f=[0.8, 0.8, 0.8]  # Gray background\n)\n\n# Standard blocking plotter\nplot = vp.ExPlotter.init_with_std_plotter(title=\"Motion\")\n```\n\nMOTION VISUALIZATION METHODS:\n\n1. Joint Points:\n```python\nplot.add_points(\n    pts,                     # (N,3) array\n    color3f=[1,0,0],        # RGB color\n    style='sphere',         # 'points', 'sphere', 'points_gaussian'\n    point_size=10\n)\n```\n\n2. Skeleton Bones:\n```python\n# Connect joint pairs\nplot.add_line_segments(\n    pts1,                   # Start points (N,3)\n    pts2,                   # End points (N,3)\n    color3f=[0,1,0],       # Can be (3,) or (N,3) for per-segment colors\n    line_width=2.0,\n    with_arrow=False       # True for directional arrows\n)\n```\n\n3. Motion Trajectory:\n```python\nplot.add_polyline(\n    pts,                    # Connected points (N,3)\n    color3f=[0,0,1],\n    line_width=2.0,\n    show_marker=True,       # Show points along line\n    marker_size=5.0\n)\n```\n\n4. Coordinate Axes:\n```python\nplot.add_axes(\n    origin=[0,0,0],\n    xyz_dirs=np.eye(3),     # X,Y,Z directions\n    axis_length=1.0,\n    line_width=2.0\n)\n```\n\n5. Ground Plane:\n```python\nplot.add_ground_plane(\n    x_size=10, y_size=10,\n    up_vector=[0,0,1],      # Z-up\n    x_seg=20, y_seg=20,     # Grid segments\n    color3f=[0.5,0.5,0.5]\n)\n```\n\n6. Text Labels:\n```python\nplot.add_text(\n    \"Joint Name\",\n    position=[x,y,z],       # 3D position\n    font_size=12,\n    color3f=[1,1,1],\n    shadow=True             # Better readability\n)\n```\n\nCAMERA CONTROL:\n```python\n# Set camera by vectors\nplot.set_camera_transform_by_vectors(\n    view_dir=[0,0,-1],      # Look direction\n    up_dir=[0,1,0],         # Up vector\n    position=[5,5,5]        # Camera position\n)\n```\n\nIMAGE EXPORT:\n```python\nplot.save_image(\"output.png\")\nimg_array = plot.get_image()  # Get as numpy array\n```\n\nFLOWMDM MOTION VISUALIZATION EXAMPLE:\n```python\nimport numpy as np\nimport igpy.myplot.vistaplot as vp\n\n# Load FlowMDM result\nresult = np.load('results.npy', allow_pickle=True).item()\nmotion = result['motion']  # (1, 22, 3, frames)\n\n# Create plotter\nplot = vp.ExPlotter.init_with_background_plotter()\n\n# Visualize single frame\nframe_idx = 0\njoints = motion[0, :, :, frame_idx]  # 22 x 3\nplot.add_points(joints, color3f=[1,0,0], point_size=10)\n\n# Add skeleton connections (T2M format has specific bone pairs)\n# Define bone connections for 22-joint skeleton\n# Add ground plane for reference\nplot.add_ground_plane(10, 10)\n\nplot.show()\n```\n\nKEY FEATURES:\n- Supports trimesh integration for complex meshes\n- Volume rendering (occupancy, label maps, scalar fields)\n- PBR shading options ('flat', 'smooth', 'pbr', 'albedo')\n- Automatic color generation for multi-colored elements\n- Arrow glyphs for directional visualization\n\nTYPICAL WORKFLOW:\n1. Initialize plotter (background or standard)\n2. Add visualization elements (points, lines, meshes)\n3. Set camera view\n4. Show or save image\n5. Background plotter stays interactive, standard blocks\n\nNote: Background plotter requires pyvistaqt, already in pixi dependencies",
+        "--tags",
+        "visualization pyvista 3d-plotting motion-viewer flowmdm"
+      ]
     }
   ],
-  "lastUpdated": "2025-09-02T03:46:18.623Z"
+  "lastUpdated": "2025-09-02T07:42:04.652Z"
 }

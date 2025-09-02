@@ -1,0 +1,350 @@
+# Motion Generation Survey - Comprehensive Project Configuration
+# This file contains all project metadata, dependencies, and tool configurations
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["igpy"]
+
+[project]
+name = "motion-gen-survey"
+version = "0.1.0"
+description = "A comprehensive survey and implementation of motion generation methods"
+authors = [
+    {name = "igamenovoer", email = "igamenovoer@xx.com"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.13.5,<3.14"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+]
+keywords = ["motion-generation", "computer-vision", "3d", "animation", "ai"]
+dependencies = ["einops>=0.8.1,<0.9"]
+
+[project.optional-dependencies]
+dev = [
+    # Note: Dev dependencies are managed through tool.pixi.feature.dev sections below
+    # This section is kept minimal for standard Python packaging compatibility
+]
+
+[project.urls]
+Homepage = "https://github.com/igamenovoer/motion-gen-survey"
+Repository = "https://github.com/igamenovoer/motion-gen-survey"
+Issues = "https://github.com/igamenovoer/motion-gen-survey/issues"
+
+# =============================================================================
+# Pixi Configuration - Package Management and Environments
+# =============================================================================
+
+[tool.pixi.project]
+authors = ["igamenovoer <igamenovoer@xx.com>"]
+channels = ["conda-forge", "pytorch", "nvidia"]
+name = "motion-gen-survey"
+platforms = ["win-64", "linux-64"]
+version = "0.1.0"
+
+[tool.pixi.tasks]
+# FlowMDM wrapper tasks - use Method 2 from howto-manage-pixi-submodule-environments.md
+# Setup and utility tasks
+flowmdm-setup = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml setup"
+flowmdm-shell = "pixi shell --manifest-path model_zoo/FlowMDM/pixi.toml"
+flowmdm-install = "pixi install --manifest-path model_zoo/FlowMDM/pixi.toml"
+flowmdm-add = "pixi add --manifest-path model_zoo/FlowMDM/pixi.toml"
+
+# Testing and verification tasks  
+flowmdm-test-cuda = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml test-cuda"
+flowmdm-pytorch-version = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml pytorch-version"
+
+# Motion generation tasks
+flowmdm-help = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml help"
+flowmdm-generate = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml generate"
+flowmdm-generate-motion = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml generate-motion"
+flowmdm-generate-safe = "pixi run --manifest-path model_zoo/FlowMDM/pixi.toml generate-safe"
+
+[tool.pixi.pypi-options]
+# PyTorch CUDA 12.6 wheels require custom index
+extra-index-urls = [
+    "https://download.pytorch.org/whl/cu126"
+]
+
+[tool.pixi.dependencies]
+python = ">=3.13.5,<3.14"
+
+[tool.pixi.pypi-dependencies]
+# PyTorch with CUDA 12.6 support (uses extra-index-url from [pypi-options])
+torch = "*"
+torchvision = "*"
+ipykernel = ">=6.30.1, <7"
+
+# Git-based dependencies (converted from pip install git+https://...)
+clip = { git = "https://github.com/openai/CLIP.git" }
+smplx = { git = "https://github.com/GuyTevet/smplx.git" }
+pyvista = ">=0.46.3, <0.47"
+pyvistaqt = ">=0.11.3, <0.12"
+trimesh = ">=4.8.0, <5"
+pyqt5 = ">=5.15.11, <6"
+
+[tool.pixi.feature.dev.dependencies]
+# Testing framework
+pytest = ">=8.0.0,<9"
+pytest-cov = ">=5.0.0,<6"  # Coverage reporting
+pytest-xdist = ">=3.5.0,<4"  # Parallel test execution
+
+# Type checking
+mypy = ">=1.17.1,<2"
+
+# Linting and formatting
+ruff = ">=0.8.0,<1"  # Fast Python linter and formatter
+
+[tool.pixi.feature.dev.pypi-dependencies]
+# Additional testing utilities
+pytest-timeout = ">=2.3.0"  # Timeout plugin for long-running tests
+pytest-mock = ">=3.14.0"  # Mocking support
+hypothesis = ">=6.100.0"  # Property-based testing
+
+# Type stubs for better type checking
+types-requests = "*"
+types-pyyaml = "*"
+# Note: torch-stubs doesn't exist on PyPI. Use mypy overrides below instead
+
+# Code quality tools
+black = ">=24.0.0"  # Code formatter (optional, as ruff can format too)
+isort = ">=5.13.0"  # Import sorting (optional, as ruff can sort imports)
+
+[tool.pixi.feature.dev.tasks]
+# Testing tasks
+test = "pytest tests/ -v"
+test-cov = "pytest tests/ --cov=. --cov-report=html --cov-report=term"
+test-fast = "pytest tests/ -x --ff"  # Stop on first failure, run failed tests first
+test-parallel = "pytest tests/ -n auto"  # Run tests in parallel
+
+# Type checking tasks
+typecheck = "mypy scripts/ --ignore-missing-imports"
+typecheck-strict = "mypy scripts/ --strict --ignore-missing-imports"
+
+# Linting and formatting tasks
+lint = "ruff check ."
+lint-fix = "ruff check . --fix"
+format = "ruff format ."
+format-check = "ruff format . --check"
+
+# Combined quality checks
+check-all = { depends-on = ["lint", "typecheck", "test"] }
+fix-all = { depends-on = ["lint-fix", "format"] }
+
+# Development workflow helpers
+dev-install = "pixi install -e dev"
+dev-shell = "pixi shell -e dev"
+
+[tool.pixi.environments]
+# Default environment (base packages only)
+default = { solve-group = "default" }
+
+# Development environment (includes all default packages + dev tools)
+dev = { features = ["dev"], solve-group = "default" }
+
+# Optional: Create a minimal test environment without heavy ML packages
+# test-minimal = { features = ["dev"], no-default-feature = true }
+
+# =============================================================================
+# Tool Configurations
+# =============================================================================
+
+[tool.pytest.ini_options]
+# Pytest configuration
+minversion = "8.0"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-ra",  # Show all test summary info
+    "--strict-markers",  # Markers must be registered
+    "--strict-config",  # Error on unknown config options
+    "--showlocals",  # Show local variables in tracebacks
+    "--tb=short",  # Short traceback format
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "gpu: marks tests that require GPU",
+    "integration: marks integration tests",
+    "unit: marks unit tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+# Coverage configuration
+source = ["scripts", "implementations"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/model_zoo/*",  # Exclude submodules
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.mypy]
+# MyPy configuration
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # Start permissive
+ignore_missing_imports = true
+follow_imports = "silent"
+show_error_codes = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+pretty = true
+
+# Per-module options
+[[tool.mypy.overrides]]
+module = [
+    "torch.*",
+    "torchvision.*",
+    "pyvista.*",
+    "trimesh.*",
+    "smplx.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "scripts.*"
+disallow_untyped_defs = false  # Be lenient with scripts initially
+
+[tool.ruff]
+# Ruff configuration (merged from ruff.toml)
+target-version = "py313"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+    "RUF",  # Ruff-specific rules
+]
+
+ignore = [
+    "E501",  # Line too long (handled by formatter)
+    "B008",  # Do not perform function calls in argument defaults
+    "C901",  # Too complex
+    "W191",  # Indentation contains tabs
+]
+
+# Exclude directories
+exclude = [
+    ".git",
+    ".pixi",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+    ".venv",
+    "venv",
+    "model_zoo/*/build",  # Exclude submodule builds
+]
+
+# Allow unused variables when underscore-prefixed
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+# Allow certain confusable Unicode characters
+allowed-confusables = ["'", "'", "–", "—"]
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore import violations in __init__ files
+"__init__.py" = ["E402", "F401"]
+# Ignore type annotations in scripts
+"scripts/*.py" = ["UP007"]
+# Ignore imports in test files
+"tests/*.py" = ["F401", "F811"]
+
+[tool.ruff.lint.isort]
+# Import sorting configuration
+combine-as-imports = true
+force-single-line = false
+lines-after-imports = 2
+known-first-party = ["igpy", "motion_gen_survey"]
+
+[tool.ruff.lint.mccabe]
+# Maximum complexity
+max-complexity = 10
+
+[tool.ruff.lint.pep8-naming]
+# Allow lowercase arguments in functions (for nn.Module, etc.)
+classmethod-decorators = ["classmethod", "pydantic.validator"]
+
+[tool.ruff.format]
+# Format docstrings
+docstring-code-format = true
+
+# Quote style
+quote-style = "double"
+
+# Indent style
+indent-style = "space"
+
+# Skip magic trailing comma
+skip-magic-trailing-comma = false
+
+[tool.black]
+# Black configuration (optional, since ruff can format)
+line-length = 88
+target-version = ["py313"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.git
+  | \.pixi
+  | __pycache__
+  | model_zoo
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+# isort configuration (optional, since ruff can sort imports)
+profile = "black"
+line_length = 88
+known_first_party = ["igpy", "motion_gen_survey"]
+skip_gitignore = true
+skip = [".pixi", "model_zoo"]

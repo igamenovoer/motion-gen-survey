@@ -1,0 +1,13 @@
+{
+    "servers": {
+        "serena-mcp": {
+            "command": "serena-mcp-server",
+            "args": [
+                "--context",
+                "ide-assistant",
+                "--project",
+                "${workspaceFolder}"
+            ]
+        }
+    }
+}

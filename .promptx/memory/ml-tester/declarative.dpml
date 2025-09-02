@@ -63,4 +63,160 @@
     </content>
     <tags>#其他</tags>
   </item>
+  <item id="mem_1756798924649_7w4j71ewd" time="2025/09/02 15:42">
+    <content>
+      VistaPlot PyVista Visualization Library (motion-gen-survey)
+    
+      LIBRARY OVERVIEW:
+      - Custom PyVista wrapper at igpy.myplot.vistaplot
+      - Extended plotter with helper functions for 3D visualization
+      - Supports both blocking and non-blocking (Qt background) plotting
+      - Designed for scientific visualization including motion data
+      - IMPORTANT: DO NOT use this library for animation, it is designed for static 3D visualization
+    
+      KEY CLASSES:
+      1. VistaObject: Wrapper holding PyVista mesh + trimesh info
+      2. ExPlotter: Extended plotter with visualization helpers
+    
+      INITIALIZATION:
+      ```python
+      import igpy.myplot.vistaplot as vp
+    
+      # Non-blocking Qt background plotter (recommended)
+      plot = vp.ExPlotter.init_with_background_plotter(
+      with_menu=False,          # Hide Qt menu
+      with_toolbar=False,       # Hide camera toolbar
+      title=&quot;Motion Viewer&quot;,
+      background_color3f=[0.8, 0.8, 0.8]  # Gray background
+      )
+    
+      # Standard blocking plotter
+      plot = vp.ExPlotter.init_with_std_plotter(title=&quot;Motion&quot;)
+      ```
+    
+      MOTION VISUALIZATION METHODS:
+    
+      1. Joint Points:
+      ```python
+      plot.add_points(
+      pts,                     # (N,3) array
+      color3f=[1,0,0],        # RGB color
+      style=&#x27;sphere&#x27;,         # &#x27;points&#x27;, &#x27;sphere&#x27;, &#x27;points_gaussian&#x27;
+      point_size=10
+      )
+      ```
+    
+      2. Skeleton Bones:
+      ```python
+      # Connect joint pairs
+      plot.add_line_segments(
+      pts1,                   # Start points (N,3)
+      pts2,                   # End points (N,3)
+      color3f=[0,1,0],       # Can be (3,) or (N,3) for per-segment colors
+      line_width=2.0,
+      with_arrow=False       # True for directional arrows
+      )
+      ```
+    
+      3. Motion Trajectory:
+      ```python
+      plot.add_polyline(
+      pts,                    # Connected points (N,3)
+      color3f=[0,0,1],
+      line_width=2.0,
+      show_marker=True,       # Show points along line
+      marker_size=5.0
+      )
+      ```
+    
+      4. Coordinate Axes:
+      ```python
+      plot.add_axes(
+      origin=[0,0,0],
+      xyz_dirs=np.eye(3),     # X,Y,Z directions
+      axis_length=1.0,
+      line_width=2.0
+      )
+      ```
+    
+      5. Ground Plane:
+      ```python
+      plot.add_ground_plane(
+      x_size=10, y_size=10,
+      up_vector=[0,0,1],      # Z-up
+      x_seg=20, y_seg=20,     # Grid segments
+      color3f=[0.5,0.5,0.5]
+      )
+      ```
+    
+      6. Text Labels:
+      ```python
+      plot.add_text(
+      &quot;Joint Name&quot;,
+      position=[x,y,z],       # 3D position
+      font_size=12,
+      color3f=[1,1,1],
+      shadow=True             # Better readability
+      )
+      ```
+    
+      CAMERA CONTROL:
+      ```python
+      # Set camera by vectors
+      plot.set_camera_transform_by_vectors(
+      view_dir=[0,0,-1],      # Look direction
+      up_dir=[0,1,0],         # Up vector
+      position=[5,5,5]        # Camera position
+      )
+      ```
+    
+      IMAGE EXPORT:
+      ```python
+      plot.save_image(&quot;output.png&quot;)
+      img_array = plot.get_image()  # Get as numpy array
+      ```
+    
+      FLOWMDM MOTION VISUALIZATION EXAMPLE:
+      ```python
+      import numpy as np
+      import igpy.myplot.vistaplot as vp
+    
+      # Load FlowMDM result
+      result = np.load(&#x27;results.npy&#x27;, allow_pickle=True).item()
+      motion = result[&#x27;motion&#x27;]  # (1, 22, 3, frames)
+    
+      # Create plotter
+      plot = vp.ExPlotter.init_with_background_plotter()
+    
+      # Visualize single frame
+      frame_idx = 0
+      joints = motion[0, :, :, frame_idx]  # 22 x 3
+      plot.add_points(joints, color3f=[1,0,0], point_size=10)
+    
+      # Add skeleton connections (T2M format has specific bone pairs)
+      # Define bone connections for 22-joint skeleton
+      # Add ground plane for reference
+      plot.add_ground_plane(10, 10)
+    
+      plot.show()
+      ```
+    
+      KEY FEATURES:
+      - Supports trimesh integration for complex meshes
+      - Volume rendering (occupancy, label maps, scalar fields)
+      - PBR shading options (&#x27;flat&#x27;, &#x27;smooth&#x27;, &#x27;pbr&#x27;, &#x27;albedo&#x27;)
+      - Automatic color generation for multi-colored elements
+      - Arrow glyphs for directional visualization
+    
+      TYPICAL WORKFLOW:
+      1. Initialize plotter (background or standard)
+      2. Add visualization elements (points, lines, meshes)
+      3. Set camera view
+      4. Show or save image
+      5. Background plotter stays interactive, standard blocks
+    
+      Note: Background plotter requires pyvistaqt, already in pixi dependencies
+    </content>
+    <tags>#其他</tags>
+  </item>
 </memory>
