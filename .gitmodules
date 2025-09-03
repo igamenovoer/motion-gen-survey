@@ -15,3 +15,17 @@
 	path = context/refcode/smplx
 	url = https://github.com/vchoutas/smplx.git
 	branch = main
+[submodule "context/refcode/smplcodec"]
+	path = context/refcode/smplcodec
+	url = https://github.com/Meshcapade/smplcodec.git
+	branch = main
+[submodule "context/refcode/HumanML3D"]
+	path = context/refcode/HumanML3D
+	url = https://github.com/EricGuo5513/HumanML3D.git
+	branch = main
+[submodule "context/refcode/smplify-x"]
+	path = context/refcode/smplify-x
+	url = https://github.com/vchoutas/smplify-x.git
+[submodule "context/refcode/SMPLest-X"]
+	path = context/refcode/SMPLest-X
+	url = https://github.com/SMPLCap/SMPLest-X.git
