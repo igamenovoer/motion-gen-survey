@@ -1,0 +1,1 @@
+Need to create new guide in FlowMDM explain directory instead of editing existing about-smpl-usage file due to insertion tool limitations. Will name it about-exporting-smpl-and-smplx-conversion.md with full instructions.

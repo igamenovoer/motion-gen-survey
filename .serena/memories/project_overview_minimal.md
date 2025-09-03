@@ -1,0 +1,3 @@
+Purpose: Survey + implementation workspace for human motion generation. Contains third-party FlowMDM model snapshot under model_zoo/FlowMDM and knowledge system under context/ with structured HEADER docs.
+Tech stack: Python (PyTorch for FlowMDM), packaging via pyproject + pixi environments (legacy vs latest). Visualization uses PyVista & Matplotlib (Agg backend requirement before pyplot import). Data format: motions [B,22,3,T].
+Structure highlights: context/ (design, roles, tasks, logs), model_zoo/FlowMDM (assets, data_loaders, diffusion, model, runners, utils, visualization), scripts/, tests/ (animation viewers), tmp/ (type fix scripts), data/smplx/ (SMPLX params).

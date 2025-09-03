@@ -7,7 +7,7 @@
                 "ide-assistant",
                 "--project",
                 "${workspaceFolder}"
-            ]
+            ],            
         }
     }
 }
